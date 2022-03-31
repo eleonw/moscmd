@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# copy user program *.elf to disk.img
+CMAKE_CURRENT_SOURCE_DIR="/home/eleonw/MOS_ARMV8"
+USER_BINARY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/build/user"
+function copy_elf() {
+    # ${CMAKE_CURRENT_SOURCE_DIR}/mkimg
+    rm -rf ${CMAKE_CURRENT_SOURCE_DIR}/disk
+    mkdir ${CMAKE_CURRENT_SOURCE_DIR}/disk
+    sudo mount ${CMAKE_CURRENT_SOURCE_DIR}/fs.img ${CMAKE_CURRENT_SOURCE_DIR}/disk
+    sudo cp ${USER_BINARY_DIR}/*.elf ${CMAKE_CURRENT_SOURCE_DIR}/disk/
+    sync
+    sudo umount ${CMAKE_CURRENT_SOURCE_DIR}/disk
+}
+
+function debug_qemu_micro() {
+    echo ">>> Debug MOS qemu micro"
+    qemu-system-aarch64 \
+        -M virt,gic-version=2 -cpu cortex-a57 \
+        -m 1024 \
+        -serial stdio \
+        -kernel build/mos_micro_qemu.img \
+        -drive file=fs.img,if=none,format=raw,id=x0 \
+        -device virtio-blk-device,drive=x0 \
+        -global virtio-mmio.force-legacy=false \
+        -display none -smp 4 -s -S
+}
+
+copy_elf
+
+if [ $# -ge 1 ] && [ $1 == "debug" ]; then
+    debug_qemu_micro
+else 
+    qemu-system-aarch64 \
+        -M virt,gic-version=2 -cpu cortex-a57 \
+        -m 1024 \
+        -serial stdio \
+        -kernel build/mos_micro_qemu.img \
+        -drive file=fs.img,if=none,format=raw,id=x0 \
+        -device virtio-blk-device,drive=x0 \
+        -global virtio-mmio.force-legacy=false \
+        -display none -smp 4
+fi

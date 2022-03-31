@@ -1,0 +1,2 @@
+#!/bin/bash
+aarch64-elf-addr2line -e build/$1.elf -a 0x$2

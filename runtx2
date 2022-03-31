@@ -1,0 +1,3 @@
+#!/bin/bash
+compile $1
+cp /home/eleonw/MOS_ARMV8/build/mos_micro_tx2.ubi /srv/tftp/mos

@@ -1,0 +1,58 @@
+#!/bin/bash
+mkdir -p build
+cd build
+
+declare -A valid_test
+valid_test=(
+    [ITC_TEST]=0
+    [FS_TEST]=0
+    [MQ_TEST]=0
+    [THREAD_TEST]=0
+    [FS_MULTI_TEST]=0
+    [PROC_TEST]=0
+    [MEM_TEST]=0
+    [PIPE_TEST]=0
+    [SHM_TEST]=0
+    [FUTEX_TEST]=0
+    [ITC_BENCH]=0
+)
+
+compile_flags="-DCMAKE_BUILD_TYPE=Release"
+# compile_flags=""
+
+function parse_arguments() {
+    if [ $# -ge 1 ]; then
+        if [ $# -eq 1 ] && [ $1 == "ALL" ]; then
+            for key in $(echo ${!valid_test[*]}); do
+                valid_test[$key]=1
+            done
+        else
+            for i in "$@"; do
+                tmp=$i
+                tmp=${tmp^^}
+                if [[ ${!valid_test[*]}  =~ $tmp ]]; then
+                    valid_test[$tmp]=1
+                else
+                    echo ">>> [$i] is not valid"
+                fi
+            done
+        fi
+    fi
+    for key in ${!valid_test[*]}; do 
+        if [ ${valid_test[$key]} -eq 1 ]; then
+            compile_flags="$compile_flags -D$key=ON"
+        else
+            compile_flags="$compile_flags -D$key=OFF"
+        fi
+    done
+    echo ">>> $compile_flags"
+}
+
+parse_arguments "$@";
+
+cmake .. $compile_flags
+
+cmake --build . --target mos_micro_qemu.elf -- -j10
+cmake --build . --target mos_micro_tx2.elf -- -j10
+# cmake --build . --target mos_micro_vm_tx2.elf -- -j10
+# cmake --build . --target mos_micro_vm_qemu.elf -- -j10
